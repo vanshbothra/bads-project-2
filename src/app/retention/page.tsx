@@ -4,24 +4,9 @@ import dynamic from "next/dynamic";
 import { TrendingUp, AlertTriangle } from "lucide-react";
 import { RETENTION_MODELS, RETENTION_FEATURE_IMPORTANCE, MLR_RESULTS } from "@/lib/data";
 import { PLOTLY_DARK_LAYOUT, PLOTLY_CONFIG, CHART_COLORS } from "@/lib/plotly-theme";
+import { PageHeader, MethodBox, InsightBox, AlertBanner } from "@/components/shared";
 
 const Plot = dynamic(() => import("react-plotly.js"), { ssr: false });
-
-function MethodBox({ children }: { children: React.ReactNode }) {
-  return (
-    <div className="rounded-lg border border-blue-500/20 bg-blue-500/5 px-4 py-3 text-sm text-blue-200 leading-relaxed">
-      <span className="font-semibold text-blue-400">Why: </span>{children}
-    </div>
-  );
-}
-
-function InsightBox({ children }: { children: React.ReactNode }) {
-  return (
-    <div className="rounded-lg border border-emerald-500/20 bg-emerald-500/5 px-4 py-3 text-sm text-emerald-200 leading-relaxed">
-      <span className="font-semibold text-emerald-400">Interpretation: </span>{children}
-    </div>
-  );
-}
 
 const EARLY_WARNING_SIGNS = [
   { signal: "High acquisition cost + low first-order revenue", risk: "Strong churn signal — paid too much for someone who spent too little", action: "Flag in CRM; trigger 60-day re-engagement if no second order" },
@@ -43,15 +28,7 @@ export default function RetentionPage() {
 
   return (
     <div className="mx-auto max-w-7xl space-y-8">
-      <div className="flex items-start gap-4">
-        <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-emerald-500/10">
-          <TrendingUp className="h-6 w-6 text-emerald-400" />
-        </div>
-        <div>
-          <h1 className="text-3xl font-bold text-white">Customer Retention & CLV Prediction</h1>
-          <p className="mt-1 text-sm text-slate-400">Phase 6 — Will a customer repeat-purchase within 90 days? Who is most valuable in 6 months?</p>
-        </div>
-      </div>
+      <PageHeader icon={TrendingUp} title="Customer Retention & CLV Prediction" subtitle="Will a customer repeat-purchase within 90 days? Who is most valuable in 6 months?" accent="emerald" phase="Phase 6" />
 
       <MethodBox>
         We predict repeat purchase within 90 days (binary classification) as the primary retention signal.
@@ -63,15 +40,18 @@ export default function RetentionPage() {
       </MethodBox>
 
       {/* KM survival finding */}
-      <div className="rounded-xl border border-amber-500/20 bg-amber-500/5 p-5">
-        <div className="flex items-start gap-3">
-          <AlertTriangle className="mt-0.5 h-5 w-5 shrink-0 text-amber-400" />
+      <div className="rounded-xl border border-amber-500/20 bg-amber-500/5 p-6 overflow-hidden relative">
+        <div className="absolute inset-0 opacity-5" style={{ background: "radial-gradient(ellipse at center, #f59e0b, transparent 70%)" }} />
+        <div className="relative flex flex-col sm:flex-row items-center gap-6">
+          <div className="text-center shrink-0">
+            <div className="km-hero-stat text-7xl font-black text-amber-400 leading-none">∞</div>
+            <p className="text-xs text-amber-600 font-semibold mt-1 uppercase tracking-wider">Median Time to 2nd Purchase</p>
+          </div>
           <div>
-            <p className="font-semibold text-amber-300">Kaplan-Meier Finding: Median Time to 2nd Purchase = ∞</p>
+            <p className="font-bold text-amber-300 text-base">Kaplan-Meier Finding: Median Time to 2nd Purchase = ∞</p>
             <p className="mt-1 text-sm text-amber-200/80">
-              Survival analysis (borrowing from clinical trial methodology) confirmed: among 1,477 customers
-              tracked, only 4 had a second purchase in the observation window. The median survival function
-              never drops to 0.5 — meaning <strong className="text-amber-300">fewer than half of all customers ever make a second purchase</strong>.
+              Survival analysis confirmed: among 1,477 customers tracked, only 4 had a second purchase in the observation window.
+              The median survival function never drops to 0.5 — meaning <strong className="text-amber-300">fewer than half of all customers ever make a second purchase</strong>.
               This is the most urgent finding: NovaMart is a one-time purchase business, not a repeat business.
               The 90-day window is the critical intervention window.
             </p>

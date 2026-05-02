@@ -4,24 +4,9 @@ import dynamic from "next/dynamic";
 import { Target, Info } from "lucide-react";
 import { LEAD_MODELS, LEAD_FEATURE_IMPORTANCE, LEAD_TIERS, HYPOTHESIS_TESTS, DISCOUNT_UPLIFT_CHANNEL } from "@/lib/data";
 import { PLOTLY_DARK_LAYOUT, PLOTLY_CONFIG, CHART_COLORS } from "@/lib/plotly-theme";
+import { PageHeader, MethodBox, InsightBox } from "@/components/shared";
 
 const Plot = dynamic(() => import("react-plotly.js"), { ssr: false });
-
-function MethodBox({ children }: { children: React.ReactNode }) {
-  return (
-    <div className="rounded-lg border border-blue-500/20 bg-blue-500/5 px-4 py-3 text-sm text-blue-200 leading-relaxed">
-      <span className="font-semibold text-blue-400">Why: </span>{children}
-    </div>
-  );
-}
-
-function InsightBox({ children }: { children: React.ReactNode }) {
-  return (
-    <div className="rounded-lg border border-emerald-500/20 bg-emerald-500/5 px-4 py-3 text-sm text-emerald-200 leading-relaxed">
-      <span className="font-semibold text-emerald-400">Interpretation: </span>{children}
-    </div>
-  );
-}
 
 const PREMODEL_TESTS = [
   { test: "Chi-Square: lead_source → conversion", result: "χ²=21.00, p=0.033 ✓", significant: true, note: "Lead source has a statistically significant impact on conversion" },
@@ -41,15 +26,7 @@ export default function LeadsPage() {
 
   return (
     <div className="mx-auto max-w-7xl space-y-8">
-      <div className="flex items-start gap-4">
-        <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-cyan-500/10">
-          <Target className="h-6 w-6 text-cyan-400" />
-        </div>
-        <div>
-          <h1 className="text-3xl font-bold text-white">Lead Conversion Prediction</h1>
-          <p className="mt-1 text-sm text-slate-400">Phase 5 — Identifying leads most likely to convert within 30 days</p>
-        </div>
-      </div>
+      <PageHeader icon={Target} title="Lead Conversion Prediction" subtitle="Identifying leads most likely to convert within 30 days" accent="cyan" phase="Phase 5" />
 
       <MethodBox>
         With 5,224 leads, the sales team cannot follow up on all with equal effort. We trained 5 classification
@@ -182,13 +159,13 @@ export default function LeadsPage() {
           <p className="text-xs text-slate-400">All 5,224 leads scored and tiered. Optimal classification threshold: 0.17 (cost matrix: $20 miss vs $5 false positive)</p>
           <div className="space-y-3">
             {LEAD_TIERS.map((t) => (
-              <div key={t.tier} className="rounded-lg border border-slate-700 bg-slate-800/40 p-4">
+              <div key={t.tier} className="lead-tier-card rounded-lg border border-slate-700 bg-slate-800/40 p-4">
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-2">
                     <span className="inline-block h-3 w-3 rounded-full" style={{ background: t.color }} />
                     <span className="font-semibold text-slate-200">{t.tier} Priority</span>
                   </div>
-                  <span className="text-2xl font-bold text-white">{t.count.toLocaleString()}</span>
+                  <span className="text-3xl font-black" style={{ color: t.color }}>{t.count.toLocaleString()}</span>
                 </div>
                 <div className="mt-2 flex items-center gap-4 text-xs text-slate-400">
                   <span>Avg conversion prob: <strong className="text-slate-200">{(t.avgProb * 100).toFixed(1)}%</strong></span>

@@ -1,5 +1,6 @@
 "use client";
-import { FileText, Download } from "lucide-react";
+import { useState, useEffect, useRef } from "react";
+import { ChevronDown, ChevronRight, AlertTriangle, Target, BarChart3, Users, ShoppingCart, Layers, Shield, Clock, BookOpen, Zap, TrendingUp, Check, Copy, ChevronUp, ArrowUpDown } from "lucide-react";
 
 const MEMO_CONTENT = `# NovaMart Marketing Analytics — CMO Decision Memo
 
@@ -487,78 +488,131 @@ The AOV lever is equally powerful: if 10% of customers increase first-order bask
 *NovaMart Analytics Pipeline v2.0 · Data period: 2024–2025 · Prepared by: Analytics Team*
 *All findings are statistically validated. Methods and test results are documented in full in the analytical report.*`;
 
-function renderMemo(content: string) {
-  const lines = content.split("\n");
-  const elements: React.ReactNode[] = [];
-  let i = 0;
+const FINDING_THEMES = [
+  { accent: "border-l-blue-500", bg: "bg-blue-500/5", badge: "bg-blue-500/20 text-blue-300", text: "text-blue-400" },
+  { accent: "border-l-amber-500", bg: "bg-amber-500/5", badge: "bg-amber-500/20 text-amber-300", text: "text-amber-400" },
+  { accent: "border-l-emerald-500", bg: "bg-emerald-500/5", badge: "bg-emerald-500/20 text-emerald-300", text: "text-emerald-400" },
+  { accent: "border-l-rose-500", bg: "bg-rose-500/5", badge: "bg-rose-500/20 text-rose-300", text: "text-rose-400" },
+  { accent: "border-l-violet-500", bg: "bg-violet-500/5", badge: "bg-violet-500/20 text-violet-300", text: "text-violet-400" },
+  { accent: "border-l-cyan-500", bg: "bg-cyan-500/5", badge: "bg-cyan-500/20 text-cyan-300", text: "text-cyan-400" },
+];
+const FINDING_ICONS = [Target, BarChart3, Users, ShoppingCart, Layers, Shield];
+const SEVERITY_COLORS: Record<string, string> = { "Critical": "bg-red-500/20 text-red-300 border border-red-500/30", "High": "bg-amber-500/20 text-amber-300 border border-amber-500/30" };
+const TIMELINE_COLORS = [
+  { border: "border-emerald-500", badge: "bg-emerald-500/20 text-emerald-300", icon: "text-emerald-400", bg: "bg-emerald-500/5" },
+  { border: "border-amber-500", badge: "bg-amber-500/20 text-amber-300", icon: "text-amber-400", bg: "bg-amber-500/5" },
+  { border: "border-blue-500", badge: "bg-blue-500/20 text-blue-300", icon: "text-blue-400", bg: "bg-blue-500/5" },
+];
+const KPI_STATS = [
+  { label: "Budget Waste",   value: 870,   unit: "K", prefix: "$", sub: "trapped in Affiliate",    color: "rose",    icon: AlertTriangle },
+  { label: "Revenue Gini",   value: 0.673, unit: "",  prefix: "",  sub: "extreme concentration",  color: "amber",   icon: BarChart3 },
+  { label: "Never Return",   value: 75.8,  unit: "%", prefix: "",  sub: "of customers churn",     color: "rose",    icon: Users },
+  { label: "Engaged Carts",  value: 784,   unit: "",  prefix: "",  sub: "browsers, $0 revenue",   color: "violet",  icon: ShoppingCart },
+  { label: "Cart Recovery",  value: 17.3,  unit: "K", prefix: "$", sub: "recoverable revenue",     color: "emerald", icon: Zap },
+] as const;
 
+/* ── Animated count-up hook ── */
+function useCountUp(target: number, duration = 1300) {
+  const [val, setVal] = useState(0);
+  useEffect(() => {
+    let raf: number;
+    let t0: number | null = null;
+    const tick = (ts: number) => {
+      if (!t0) t0 = ts;
+      const p = Math.min((ts - t0) / duration, 1);
+      const eased = 1 - Math.pow(1 - p, 3);
+      setVal(eased * target);
+      if (p < 1) raf = requestAnimationFrame(tick);
+    };
+    raf = requestAnimationFrame(tick);
+    return () => cancelAnimationFrame(raf);
+  }, [target, duration]);
+  return val;
+}
+
+/* ── Copy button for action items ── */
+function CopyActionButton({ text }: { text: string }) {
+  const [copied, setCopied] = useState(false);
+  return (
+    <button
+      onClick={() => { navigator.clipboard.writeText(text).catch(() => {}); setCopied(true); setTimeout(() => setCopied(false), 2000); }}
+      className="ml-auto opacity-0 group-hover:opacity-100 flex items-center gap-1 rounded px-1.5 py-0.5 text-slate-500 hover:text-slate-300 hover:bg-slate-700/50 transition-all"
+      title="Copy action title"
+    >
+      {copied ? <Check className="h-3 w-3 text-emerald-400" /> : <Copy className="h-3 w-3" />}
+    </button>
+  );
+}
+
+function fmtCell(raw: string): string {
+  let h = raw;
+  h = h.replace(/\*\*(.*?)\*\*/g, '<strong class="text-white font-semibold">$1</strong>');
+  h = h.replace(/(\+[\d.]+pp)/g, '<span class="text-emerald-400 font-medium">$1</span>');
+  h = h.replace(/(−[\d.]+pp)/g, '<span class="text-rose-400 font-medium">$1</span>');
+  h = h.replace(/([-][\d.]+pp)/g, (m) => m.startsWith('-') ? `<span class="text-rose-400 font-medium">${m}</span>` : m);
+  return h;
+}
+function fmtInline(raw: string): string {
+  return raw.replace(/\*\*(.*?)\*\*/g, '<strong class="text-slate-100 font-semibold">$1</strong>');
+}
+
+function renderLines(text: string, prefix = "s") {
+  const lines = text.split("\n");
+  const els: React.ReactNode[] = [];
+  let i = 0;
   while (i < lines.length) {
     const line = lines[i];
-
-    if (line.startsWith("# ")) {
-      elements.push(
-        <h1 key={i} className="text-3xl font-bold text-white mt-6 mb-2">{line.slice(2)}</h1>
-      );
-    } else if (line.startsWith("## ")) {
-      elements.push(
-        <h2 key={i} className="text-xl font-bold text-white mt-8 mb-3 border-b border-slate-800 pb-2">{line.slice(3)}</h2>
-      );
-    } else if (line.startsWith("### ")) {
-      elements.push(
-        <h3 key={i} className="text-base font-semibold text-slate-200 mt-5 mb-2">{line.slice(4)}</h3>
+    const k = `${prefix}-${i}`;
+    if (line.startsWith("### ")) {
+      const title = line.slice(4);
+      const iconMap: Record<string, React.ReactNode> = {
+        "How We Found It": <BookOpen className="h-4 w-4 text-blue-400" />,
+        "The Finding": <TrendingUp className="h-4 w-4 text-emerald-400" />,
+        "Business Impact": <Zap className="h-4 w-4 text-amber-400" />,
+        "Actions and Implementation": <Target className="h-4 w-4 text-violet-400" />,
+      };
+      const matchedIcon = Object.entries(iconMap).find(([k]) => title.includes(k));
+      els.push(
+        <div key={k} className="flex items-center gap-2.5 mt-6 mb-3">
+          {matchedIcon ? <span className="flex h-7 w-7 items-center justify-center rounded-lg bg-slate-800/80">{matchedIcon[1]}</span> : null}
+          <h3 className="text-base font-semibold text-slate-100 tracking-tight">{title}</h3>
+        </div>
       );
     } else if (line.startsWith("> ")) {
-      elements.push(
-        <blockquote key={i} className="border-l-2 border-blue-500 bg-blue-500/5 px-4 py-2 text-sm text-blue-200 my-3 rounded-r-lg italic">
-          {line.slice(2)}
-        </blockquote>
+      els.push(
+        <div key={k} className="border-l-2 border-blue-500/60 bg-blue-500/5 px-4 py-2 text-sm text-blue-200/90 my-2 rounded-r-lg" dangerouslySetInnerHTML={{ __html: fmtInline(line.slice(2)) }} />
       );
     } else if (line.startsWith("---")) {
-      elements.push(<hr key={i} className="border-slate-800 my-4" />);
+      els.push(<hr key={k} className="border-slate-800/60 my-6" />);
     } else if (line.startsWith("| ")) {
-      // Table
-      const tableLines: string[] = [];
-      while (i < lines.length && lines[i].startsWith("|")) {
-        tableLines.push(lines[i]);
-        i++;
-      }
-      const headers = tableLines[0].split("|").filter((c) => c.trim()).map((c) => c.trim());
-      const rows = tableLines.slice(2).map((l) => l.split("|").filter((c) => c.trim()).map((c) => c.trim()));
-      elements.push(
-        <div key={`table-${i}`} className="my-4 overflow-x-auto rounded-xl border border-slate-800">
+      const tl: string[] = [];
+      while (i < lines.length && lines[i].startsWith("|")) { tl.push(lines[i]); i++; }
+      const hds = tl[0].split("|").filter(c => c.trim()).map(c => c.trim());
+      const rows = tl.slice(2).map(l => l.split("|").filter(c => c.trim()).map(c => c.trim()));
+      els.push(
+        <div key={`t-${k}`} className="my-5 overflow-x-auto rounded-xl border border-slate-700/50 shadow-lg shadow-black/10">
           <table className="w-full text-sm">
-            <thead>
-              <tr className="border-b border-slate-800 bg-slate-900/80">
-                {headers.map((h, hi) => (
-                  <th key={hi} className="px-4 py-2.5 text-left text-xs font-semibold text-slate-400 uppercase tracking-wide">{h}</th>
-                ))}
+            <thead><tr className="bg-gradient-to-r from-slate-800/90 to-slate-800/60 border-b border-slate-700/50">
+              {hds.map((h, hi) => <th key={hi} className="px-4 py-3 text-left text-[11px] font-bold text-slate-400 uppercase tracking-wider">{h}</th>)}
+            </tr></thead>
+            <tbody>{rows.map((row, ri) => (
+              <tr key={ri} className="memo-table-row border-b border-slate-800/30 transition-colors">
+                {row.map((cell, ci) => <td key={ci} className="px-4 py-2.5 text-slate-300 text-[13px]" dangerouslySetInnerHTML={{ __html: fmtCell(cell) }} />)}
               </tr>
-            </thead>
-            <tbody>
-              {rows.map((row, ri) => (
-                <tr key={ri} className="border-b border-slate-800/50 hover:bg-slate-900/40">
-                  {row.map((cell, ci) => (
-                    <td key={ci} className="px-4 py-2.5 text-slate-300" dangerouslySetInnerHTML={{ __html: cell.replace(/\*\*(.*?)\*\*/g, "<strong>$1</strong>") }} />
-                  ))}
-                </tr>
-              ))}
-            </tbody>
+            ))}</tbody>
           </table>
         </div>
       );
       continue;
     } else if (line.startsWith("- ") || line.startsWith("* ")) {
       const items: string[] = [];
-      while (i < lines.length && (lines[i].startsWith("- ") || lines[i].startsWith("* "))) {
-        items.push(lines[i].slice(2));
-        i++;
-      }
-      elements.push(
-        <ul key={`ul-${i}`} className="my-2 space-y-1 pl-4">
+      while (i < lines.length && (lines[i].startsWith("- ") || lines[i].startsWith("* "))) { items.push(lines[i].slice(2)); i++; }
+      els.push(
+        <ul key={`ul-${k}`} className="my-2 space-y-1.5 pl-1">
           {items.map((item, ii) => (
-            <li key={ii} className="flex items-start gap-2 text-sm text-slate-300">
-              <span className="mt-1.5 h-1.5 w-1.5 shrink-0 rounded-full bg-blue-400" />
-              <span dangerouslySetInnerHTML={{ __html: item.replace(/\*\*(.*?)\*\*/g, "<strong class='text-slate-200'>$1</strong>") }} />
+            <li key={ii} className="flex items-start gap-2.5 text-sm text-slate-300">
+              <span className="mt-2 h-1.5 w-1.5 shrink-0 rounded-full bg-blue-400/70" />
+              <span className="leading-relaxed" dangerouslySetInnerHTML={{ __html: fmtInline(item) }} />
             </li>
           ))}
         </ul>
@@ -566,58 +620,292 @@ function renderMemo(content: string) {
       continue;
     } else if (/^\d+\. /.test(line)) {
       const items: string[] = [];
-      while (i < lines.length && /^\d+\. /.test(lines[i])) {
-        items.push(lines[i].replace(/^\d+\. /, ""));
-        i++;
+      while (i < lines.length && /^\d+\. /.test(lines[i])) { items.push(lines[i].replace(/^\d+\. /, "")); i++; }
+      const isSeverityList = items.some(it => it.includes("(Critical)") || it.includes("(High)"));
+      if (isSeverityList) {
+        els.push(
+          <div key={`sev-${k}`} className="my-4 grid gap-3">
+            {items.map((item, ii) => {
+              const sev = item.includes("(Critical)") ? "Critical" : "High";
+              return (
+                <div key={ii} className="rounded-xl border border-slate-700/50 bg-gradient-to-r from-slate-800/40 to-transparent p-4 memo-action-card">
+                  <div className="flex items-start gap-3">
+                    <span className="mt-0.5 flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-slate-700/60 text-xs font-bold text-slate-300">{ii + 1}</span>
+                    <div className="flex-1">
+                      <div className="flex items-center gap-2 mb-1">
+                        <span className={`rounded-full px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider ${SEVERITY_COLORS[sev]}`}>{sev}</span>
+                      </div>
+                      <p className="text-sm text-slate-300 leading-relaxed" dangerouslySetInnerHTML={{ __html: fmtInline(item) }} />
+                    </div>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        );
+      } else {
+        els.push(
+          <ol key={`ol-${k}`} className="my-2 space-y-1.5 pl-4 list-decimal list-inside">
+            {items.map((item, ii) => <li key={ii} className="text-sm text-slate-300 leading-relaxed" dangerouslySetInnerHTML={{ __html: fmtInline(item) }} />)}
+          </ol>
+        );
       }
-      elements.push(
-        <ol key={`ol-${i}`} className="my-2 space-y-1 pl-4 list-decimal list-inside">
-          {items.map((item, ii) => (
-            <li key={ii} className="text-sm text-slate-300" dangerouslySetInnerHTML={{ __html: item.replace(/\*\*(.*?)\*\*/g, "<strong class='text-slate-200'>$1</strong>") }} />
-          ))}
-        </ol>
-      );
       continue;
+    } else if (/^\*\*Action \d+/.test(line)) {
+      const title = line.replace(/\*\*/g, "");
+      els.push(
+        <div key={k} className="mt-4 mb-2 flex items-center gap-2 group">
+          <span className="flex h-5 w-5 items-center justify-center rounded bg-violet-500/20"><Target className="h-3 w-3 text-violet-400" /></span>
+          <p className="text-sm font-semibold text-slate-100">{title}</p>
+          <CopyActionButton text={title} />
+        </div>
+      );
     } else if (line.startsWith("**") && line.endsWith("**")) {
-      elements.push(
-        <p key={i} className="text-sm font-semibold text-slate-200 mt-3 mb-1">{line.replace(/\*\*/g, "")}</p>
-      );
+      els.push(<p key={k} className="text-sm font-semibold text-slate-100 mt-4 mb-1">{line.replace(/\*\*/g, "")}</p>);
     } else if (line.trim() !== "") {
-      elements.push(
-        <p key={i} className="text-sm text-slate-300 leading-relaxed my-1"
-          dangerouslySetInnerHTML={{ __html: line.replace(/\*\*(.*?)\*\*/g, "<strong class='text-slate-200'>$1</strong>") }} />
-      );
+      els.push(<p key={k} className="text-sm text-slate-300/90 leading-relaxed my-1" dangerouslySetInnerHTML={{ __html: fmtInline(line) }} />);
     }
     i++;
   }
+  return els;
+}
 
-  return elements;
+function parseSections(content: string) {
+  const lines = content.split("\n");
+  const preamble = { title: "", meta: [] as string[] };
+  let bodyStart = 0;
+  for (let i = 0; i < lines.length; i++) {
+    if (lines[i].startsWith("# ")) preamble.title = lines[i].slice(2);
+    else if (lines[i].startsWith("> ")) preamble.meta.push(lines[i].slice(2));
+    else if (lines[i].startsWith("---")) { bodyStart = i + 1; break; }
+  }
+  const body = lines.slice(bodyStart).join("\n");
+  const parts = body.split(/\n(?=## )/);
+  const sections: { id: string; title: string; body: string; type: string; fNum?: number }[] = [];
+  for (const part of parts) {
+    const t = part.trim();
+    if (!t.startsWith("## ")) continue;
+    const m = t.match(/^## (.+)/);
+    if (!m) continue;
+    const title = m[1];
+    const bd = t.slice(t.indexOf("\n") + 1);
+    const fm = title.match(/^Finding (\d+):/);
+    let type = "other";
+    if (title === "Executive Summary") type = "executive";
+    else if (fm) type = "finding";
+    else if (title.includes("Methodology")) type = "methodology";
+    else if (title.includes("30/60/90")) type = "timeline";
+    sections.push({ id: title.toLowerCase().replace(/[^a-z0-9]+/g, "-"), title, body: bd, type, fNum: fm ? parseInt(fm[1]) : undefined });
+  }
+  return { preamble, sections };
+}
+
+function FindingCard({ section, index, expanded, onToggle }: { section: { title: string; body: string; fNum?: number }; index: number; expanded: boolean; onToggle: () => void }) {
+  const theme = FINDING_THEMES[index] || FINDING_THEMES[0];
+  const Icon = FINDING_ICONS[index] || Target;
+  return (
+    <div className={`memo-section-card rounded-xl border border-slate-700/40 bg-slate-900/80 overflow-hidden border-l-4 ${theme.accent}`} style={{ animationDelay: `${index * 80}ms` }}>
+      <button onClick={onToggle} className="w-full flex items-center gap-3 px-5 py-4 text-left hover:bg-slate-800/30 transition-colors">
+        <span className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-xl ${theme.bg}`}><Icon className={`h-4.5 w-4.5 ${theme.text}`} /></span>
+        <span className={`flex h-7 w-7 shrink-0 items-center justify-center rounded-lg font-bold text-sm ${theme.badge}`}>{section.fNum}</span>
+        <h2 className="flex-1 text-lg font-bold text-white tracking-tight">{section.title}</h2>
+        {expanded ? <ChevronDown className="h-5 w-5 text-slate-500" /> : <ChevronRight className="h-5 w-5 text-slate-500" />}
+      </button>
+      {expanded && <div className="px-5 pb-5 border-t border-slate-800/40">{renderLines(section.body, `f${index}`)}</div>}
+    </div>
+  );
+}
+
+function TimelineSection({ body }: { body: string }) {
+  const labels = ["30 Days", "60 Days", "90 Days"];
+  const icons = [Zap, TrendingUp, Target];
+  // Filter to only valid phase blocks so the index always aligns with labels/icons/colors
+  const phases = body.split(/\n(?=### )/).filter(p => p.trim().startsWith("### "));
+  return (
+    <div className="grid gap-4 md:grid-cols-3">
+      {phases.map((phase, pi) => {
+        const titleLine = phase.match(/^### (.+)/)?.[1] || "";
+        const phaseBody = phase.slice(phase.indexOf("\n") + 1);
+        const tc = TIMELINE_COLORS[pi] || TIMELINE_COLORS[0];
+        const PIcon = icons[pi] || icons[0];
+        return (
+          <div key={pi} className={`rounded-xl border ${tc.border}/30 ${tc.bg} p-4 memo-section-card`}>
+            <div className="flex items-center gap-2 mb-3">
+              <span className={`flex h-8 w-8 items-center justify-center rounded-lg ${tc.badge}`}><PIcon className="h-4 w-4" /></span>
+              <div>
+                <span className={`text-xs font-bold uppercase tracking-wider ${tc.badge} rounded-full px-2 py-0.5`}>{labels[pi]}</span>
+                <p className="text-xs text-slate-400 mt-0.5">{titleLine.replace(/^Next \d+ Days — /, "")}</p>
+              </div>
+            </div>
+            <div className="text-xs">{renderLines(phaseBody, `tl${pi}`)}</div>
+          </div>
+        );
+      })}
+    </div>
+  );
+}
+
+/* ── Reading progress bar ── */
+function ReadingProgressBar() {
+  const [pct, setPct] = useState(0);
+  useEffect(() => {
+    const onScroll = () => {
+      const h = document.documentElement.scrollHeight - window.innerHeight;
+      setPct(h > 0 ? (window.scrollY / h) * 100 : 0);
+    };
+    window.addEventListener("scroll", onScroll, { passive: true });
+    return () => window.removeEventListener("scroll", onScroll);
+  }, []);
+  return <div className="memo-progress-bar" style={{ width: `${pct}%` }} />;
+}
+
+
+/* ── KPI card with animated counter ── */
+function KpiCard({ stat }: { stat: typeof KPI_STATS[number] }) {
+  const raw = useCountUp(stat.value);
+  const decimals = String(stat.value).includes(".") ? (stat.unit === "K" ? 1 : 3) : 0;
+  const display = `${stat.prefix}${raw.toFixed(decimals)}${stat.unit}`;
+  const Icon = stat.icon;
+  const cls: Record<string, string> = {
+    rose:    "text-rose-400 bg-rose-500/10 border-rose-500/20",
+    amber:   "text-amber-400 bg-amber-500/10 border-amber-500/20",
+    emerald: "text-emerald-400 bg-emerald-500/10 border-emerald-500/20",
+    violet:  "text-violet-400 bg-violet-500/10 border-violet-500/20",
+    blue:    "text-blue-400 bg-blue-500/10 border-blue-500/20",
+  };
+  const [textCls, bgCls, borderCls] = (cls[stat.color] ?? cls.blue).split(" ");
+  return (
+    <div className={`memo-kpi-card flex flex-col gap-1.5 rounded-xl border ${borderCls} ${bgCls.replace("bg-", "bg-slate-900/70 border-").split(" ")[0]} bg-slate-900/70 p-4`}>
+      <div className={`flex h-8 w-8 items-center justify-center rounded-lg ${bgCls}`}>
+        <Icon className={`h-4 w-4 ${textCls}`} />
+      </div>
+      <span className={`text-2xl font-extrabold tracking-tight ${textCls}`}>{display}</span>
+      <span className="text-[11px] font-semibold text-slate-400 uppercase tracking-wider leading-tight">{stat.label}</span>
+      <span className="text-[10px] text-slate-500 leading-tight">{stat.sub}</span>
+    </div>
+  );
 }
 
 export default function MemoPage() {
-  return (
-    <div className="mx-auto max-w-4xl space-y-6">
-      <div className="flex items-center justify-between">
-        <div className="flex items-start gap-4">
-          <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-slate-800">
-            <FileText className="h-6 w-6 text-slate-300" />
-          </div>
-          <div>
-            <h1 className="text-3xl font-bold text-white">CMO Decision Memo</h1>
-            <p className="mt-1 text-sm text-slate-400">Full analysis narrative with findings, methodology, and recommendations</p>
-          </div>
-        </div>
-        <div className="hidden sm:flex items-center gap-2">
-          <span className="rounded-full bg-slate-800 px-3 py-1 text-xs text-slate-400">2024–2025 Data</span>
-          <span className="rounded-full bg-blue-500/20 px-3 py-1 text-xs text-blue-400">Analytics v2.0</span>
-        </div>
-      </div>
+  const { preamble, sections } = parseSections(MEMO_CONTENT);
+  const [expanded, setExpanded] = useState<Record<string, boolean>>(() => {
+    const m: Record<string, boolean> = {};
+    sections.forEach(s => { m[s.id] = true; });
+    return m;
+  });
+  const [activeSection, setActiveSection] = useState("");
+  const sectionRefs = useRef<Record<string, HTMLDivElement | null>>({});
+  const findingSections = sections.filter(s => s.type === "finding");
+  const allExpanded = findingSections.every(s => expanded[s.id] !== false);
 
-      <div className="rounded-xl border border-slate-800 bg-slate-900 p-6 lg:p-8">
-        <div className="prose-custom">
-          {renderMemo(MEMO_CONTENT)}
+  const toggle = (id: string) => setExpanded(prev => ({ ...prev, [id]: !prev[id] }));
+  const toggleAll = () => {
+    const next = !allExpanded;
+    setExpanded(prev => { const m = { ...prev }; findingSections.forEach(s => { m[s.id] = next; }); return m; });
+  };
+
+  /* scroll spy */
+  useEffect(() => {
+    const obs: IntersectionObserver[] = [];
+    sections.forEach(s => {
+      const el = sectionRefs.current[s.id];
+      if (!el) return;
+      const o = new IntersectionObserver(([e]) => { if (e.isIntersecting) setActiveSection(s.id); }, { rootMargin: "-20% 0px -65% 0px" });
+      o.observe(el); obs.push(o);
+    });
+    return () => obs.forEach(o => o.disconnect());
+  }, [sections]);
+
+  return (
+    <>
+      <ReadingProgressBar />
+      <div className="mx-auto max-w-5xl space-y-6">
+
+        {/* ── Hero ── */}
+        <div className="memo-fade-in memo-hero rounded-2xl p-6 sm:p-8 relative overflow-hidden">
+          <div className="memo-hero-grid" />
+          <div className="relative z-10">
+            <div className="mb-2"><span className="memo-shimmer-badge text-xs font-bold uppercase tracking-[0.2em]">Confidential · CMO Memo</span></div>
+            <h1 className="text-3xl sm:text-4xl font-extrabold text-white tracking-tight leading-tight">{preamble.title}</h1>
+            <div className="flex flex-wrap gap-2 mt-3">
+              {preamble.meta.map((m, i) => (
+                <span key={i} className="rounded-full border border-slate-700/50 bg-slate-800/60 px-3.5 py-1.5 text-xs text-slate-300 backdrop-blur-sm" dangerouslySetInnerHTML={{ __html: fmtInline(m) }} />
+              ))}
+            </div>
+          </div>
         </div>
+
+        {/* ── KPI Bar ── */}
+        <div className="memo-fade-in grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-3" style={{ animationDelay: "60ms" }}>
+          {KPI_STATS.map((stat, i) => <KpiCard key={i} stat={stat} />)}
+        </div>
+
+        {/* ── Table of Contents ── */}
+        <div className="memo-fade-in rounded-xl border border-slate-700/40 bg-slate-900/60 p-4" style={{ animationDelay: "100ms" }}>
+          <div className="flex items-center justify-between mb-3">
+            <h3 className="text-xs font-bold uppercase tracking-wider text-slate-500">Table of Contents</h3>
+            <button onClick={toggleAll} className="flex items-center gap-1.5 rounded-lg border border-slate-700/50 bg-slate-800/60 px-3 py-1.5 text-[11px] font-medium text-slate-400 hover:text-white hover:border-slate-600 transition-all">
+              <ArrowUpDown className="h-3 w-3" />{allExpanded ? "Collapse All" : "Expand All"}
+            </button>
+          </div>
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-1.5">
+            {sections.map((s, i) => (
+              <a key={i} href={`#${s.id}`} className={`memo-toc-link rounded-lg px-3 py-1.5 text-xs text-slate-400 hover:text-blue-300 truncate ${activeSection === s.id ? "active" : ""}`}>{s.title}</a>
+            ))}
+          </div>
+        </div>
+
+        {/* ── Sections ── */}
+        {sections.map((section, si) => (
+          <div key={section.id} id={section.id} ref={el => { sectionRefs.current[section.id] = el; }} className="memo-fade-in" style={{ animationDelay: `${150 + si * 60}ms` }}>
+            {section.type === "executive" && (
+              <div className="rounded-xl border border-amber-500/30 bg-slate-900/80 overflow-hidden memo-alert-border">
+                <div className="flex items-center gap-2 px-5 py-3 bg-gradient-to-r from-red-500/10 to-amber-500/5 border-b border-amber-500/20">
+                  <AlertTriangle className="h-4 w-4 text-amber-400" />
+                  <span className="text-sm font-bold text-amber-300">4 Critical Structural Problems Identified</span>
+                </div>
+                <div className="px-5 py-5">{renderLines(section.body, "exec")}</div>
+              </div>
+            )}
+            {section.type === "finding" && (
+              <FindingCard section={section} index={(section.fNum || 1) - 1} expanded={expanded[section.id] !== false} onToggle={() => toggle(section.id)} />
+            )}
+            {section.type === "methodology" && (
+              <div className="rounded-xl border border-slate-700/40 bg-slate-900/80 overflow-hidden memo-section-card">
+                <div className="flex items-center gap-3 px-5 py-4 border-b border-slate-800/40">
+                  <span className="flex h-9 w-9 items-center justify-center rounded-xl bg-blue-500/10"><BookOpen className="h-4.5 w-4.5 text-blue-400" /></span>
+                  <h2 className="text-lg font-bold text-white">{section.title}</h2>
+                </div>
+                <div className="px-5 pb-5">{renderLines(section.body, "meth")}</div>
+              </div>
+            )}
+            {section.type === "timeline" && (
+              <div className="space-y-4">
+                <div className="flex items-center gap-3">
+                  <span className="flex h-9 w-9 items-center justify-center rounded-xl bg-emerald-500/10"><Clock className="h-4.5 w-4.5 text-emerald-400" /></span>
+                  <h2 className="text-lg font-bold text-white">{section.title}</h2>
+                </div>
+                <TimelineSection body={section.body} />
+              </div>
+            )}
+            {section.type === "other" && (
+              <div className="rounded-xl border border-slate-700/40 bg-slate-900/80 p-5 memo-section-card">
+                <h2 className="text-lg font-bold text-white mb-3">{section.title}</h2>
+                {renderLines(section.body, `oth${si}`)}
+              </div>
+            )}
+          </div>
+        ))}
+
+        {/* ── Footer ── */}
+        <div className="flex items-center justify-center gap-4 py-4">
+          <span className="text-xs text-slate-600">NovaMart Analytics Pipeline v2.0 · Data period: 2024–2025 · All findings statistically validated</span>
+          <button onClick={() => window.scrollTo({ top: 0, behavior: "smooth" })} className="memo-back-top flex items-center gap-1.5 rounded-lg border border-slate-700/50 bg-slate-800/60 px-3 py-1.5 text-[11px] text-slate-500 hover:text-white hover:border-slate-600 transition-all">
+            <ChevronUp className="h-3 w-3" /> Top
+          </button>
+        </div>
+
       </div>
-    </div>
+    </>
   );
 }

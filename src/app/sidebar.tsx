@@ -53,7 +53,7 @@ export default function Sidebar() {
                 className={cn(
                   "flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition-colors",
                   isActive
-                    ? "bg-blue-500/10 text-blue-400"
+                    ? "bg-blue-500/10 text-blue-400 nav-active-bar"
                     : "text-slate-400 hover:bg-slate-800 hover:text-slate-200"
                 )}
                 title={collapsed ? item.label : undefined}
@@ -73,7 +73,7 @@ export default function Sidebar() {
 
   const header = (
     <div className="flex h-16 items-center gap-3 border-b border-slate-800 px-4">
-      <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-blue-500">
+      <div className="sidebar-logo flex h-8 w-8 shrink-0 items-center justify-center rounded-lg">
         <ShoppingCart className="h-4 w-4 text-white" />
       </div>
       {(!collapsed || mobileOpen) && (

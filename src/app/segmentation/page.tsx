@@ -4,24 +4,9 @@ import dynamic from "next/dynamic";
 import { Users, AlertTriangle, TrendingUp } from "lucide-react";
 import { SEGMENTS, RFM_TIERS, DISCOUNT_UPLIFT_TIER } from "@/lib/data";
 import { PLOTLY_DARK_LAYOUT, PLOTLY_CONFIG, CHART_COLORS } from "@/lib/plotly-theme";
+import { PageHeader, MethodBox, InsightBox, AlertBanner } from "@/components/shared";
 
 const Plot = dynamic(() => import("react-plotly.js"), { ssr: false });
-
-function MethodBox({ children }: { children: React.ReactNode }) {
-  return (
-    <div className="rounded-lg border border-blue-500/20 bg-blue-500/5 px-4 py-3 text-sm text-blue-200 leading-relaxed">
-      <span className="font-semibold text-blue-400">Why: </span>{children}
-    </div>
-  );
-}
-
-function InsightBox({ children }: { children: React.ReactNode }) {
-  return (
-    <div className="rounded-lg border border-emerald-500/20 bg-emerald-500/5 px-4 py-3 text-sm text-emerald-200 leading-relaxed">
-      <span className="font-semibold text-emerald-400">Interpretation: </span>{children}
-    </div>
-  );
-}
 
 const PERSONA_STRATEGIES = [
   {
@@ -90,15 +75,7 @@ export default function SegmentationPage() {
 
   return (
     <div className="mx-auto max-w-7xl space-y-8">
-      <div className="flex items-start gap-4">
-        <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-violet-500/10">
-          <Users className="h-6 w-6 text-violet-400" />
-        </div>
-        <div>
-          <h1 className="text-3xl font-bold text-white">Customer Segmentation</h1>
-          <p className="mt-1 text-sm text-slate-400">Phase 3 — Who are our customers and how differently do they behave?</p>
-        </div>
-      </div>
+      <PageHeader icon={Users} title="Customer Segmentation" subtitle="Who are our customers and how differently do they behave?" accent="violet" phase="Phase 3" />
 
       <MethodBox>
         K-Means clustering was applied to behavioral and transactional features (revenue, sessions, add-to-cart,
@@ -204,27 +181,21 @@ export default function SegmentationPage() {
       </div>
 
       {/* Key concentration insight */}
-      <div className="rounded-xl border border-amber-500/20 bg-amber-500/5 p-5">
-        <div className="flex items-start gap-3">
-          <AlertTriangle className="mt-0.5 h-5 w-5 shrink-0 text-amber-400" />
-          <div>
-            <p className="font-semibold text-amber-300">Revenue Concentration: Gini = 0.673</p>
-            <p className="mt-1 text-sm text-amber-200/80">
-              18 Champion customers generate $24,243 in total revenue — more than the bottom 1,000 customers combined ($676).
-              The Lorenz curve confirms extreme inequality (0 = perfect equality, 1 = max inequality).
-              This means protecting existing high-value customers is more important than acquiring new low-quality ones.
-              <strong className="text-amber-300"> Churn prevention for Champions has a 37× revenue-per-customer ROI advantage over acquiring new Bronze customers.</strong>
-            </p>
-          </div>
-        </div>
-      </div>
+      <AlertBanner type="amber" title="Revenue Concentration: Gini = 0.673" pulse>
+        <p className="mt-1 text-sm text-amber-200/80">
+          18 Champion customers generate $24,243 in total revenue — more than the bottom 1,000 customers combined ($676).
+          The Lorenz curve confirms extreme inequality (0 = perfect equality, 1 = max inequality).
+          This means protecting existing high-value customers is more important than acquiring new low-quality ones.
+          <strong className="text-amber-300"> Churn prevention for Champions has a 37× revenue-per-customer ROI advantage over acquiring new Bronze customers.</strong>
+        </p>
+      </AlertBanner>
 
       {/* Persona cards */}
       <div>
         <h2 className="mb-4 text-lg font-semibold text-white">Segment Personas & Strategies</h2>
         <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
           {PERSONA_STRATEGIES.map((p) => (
-            <div key={p.name} className="rounded-xl border border-slate-800 bg-slate-900 p-5 space-y-3">
+            <div key={p.name} className={`persona-card rounded-xl border border-slate-800 bg-slate-900 p-5 space-y-3 border-l-4 border-l-${p.color}-500/60`}>
               <div className="flex items-center gap-3">
                 <span className={`rounded-full px-3 py-1 text-sm font-semibold ${p.badge}`}>{p.name}</span>
                 <span className="text-sm text-slate-400">{p.n.toLocaleString()} customers</span>

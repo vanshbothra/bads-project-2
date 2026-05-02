@@ -1,10 +1,11 @@
 "use client";
-import { Lightbulb, CheckCircle2, Clock, TrendingUp, DollarSign, Users, Target, AlertTriangle } from "lucide-react";
+import { Lightbulb, CheckCircle2, Clock, TrendingUp, DollarSign, Users, Target, AlertTriangle, Zap, Info } from "lucide-react";
+import { PageHeader } from "@/components/shared";
 
 function PriorityBadge({ p }: { p: string }) {
-  if (p === "critical") return <span className="inline-block rounded-full bg-rose-500/20 px-2 py-0.5 text-xs font-medium text-rose-400">🔴 Critical</span>;
-  if (p === "high") return <span className="inline-block rounded-full bg-amber-500/20 px-2 py-0.5 text-xs font-medium text-amber-400">🟠 High</span>;
-  return <span className="inline-block rounded-full bg-blue-500/20 px-2 py-0.5 text-xs font-medium text-blue-400">🟡 Medium</span>;
+  if (p === "critical") return <span className="inline-flex items-center gap-1 rounded-full bg-rose-500/20 px-2 py-0.5 text-xs font-medium text-rose-400"><AlertTriangle className="h-3 w-3" />Critical</span>;
+  if (p === "high")     return <span className="inline-flex items-center gap-1 rounded-full bg-amber-500/20 px-2 py-0.5 text-xs font-medium text-amber-400"><Zap className="h-3 w-3" />High</span>;
+  return <span className="inline-flex items-center gap-1 rounded-full bg-blue-500/20 px-2 py-0.5 text-xs font-medium text-blue-400"><Info className="h-3 w-3" />Medium</span>;
 }
 
 const THEMES = [
@@ -155,15 +156,7 @@ const ACTIONS_90 = [
 export default function InsightsPage() {
   return (
     <div className="mx-auto max-w-5xl space-y-8">
-      <div className="flex items-start gap-4">
-        <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-yellow-500/10">
-          <Lightbulb className="h-6 w-6 text-yellow-400" />
-        </div>
-        <div>
-          <h1 className="text-3xl font-bold text-white">Business Insights & Recommendations</h1>
-          <p className="mt-1 text-sm text-slate-400">Synthesized findings from all 8 analytical phases — with methodology justification for each</p>
-        </div>
-      </div>
+      <PageHeader icon={Lightbulb} title="Business Insights & Recommendations" subtitle="Synthesized findings from all 8 analytical phases — with methodology justification for each" accent="yellow" />
 
       {/* Summary table */}
       <div className="overflow-x-auto rounded-xl border border-slate-800">
@@ -246,22 +239,21 @@ export default function InsightsPage() {
         <h2 className="text-lg font-semibold text-white flex items-center gap-2">
           <Clock className="h-5 w-5 text-amber-400" /> Priority Action Checklist
         </h2>
-        <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
+        <div className="grid grid-cols-1 gap-4 lg:grid-cols-3">
           {[
-            { period: "Next 30 Days", color: "rose", actions: ACTIONS_30 },
-            { period: "Next 60 Days", color: "amber", actions: ACTIONS_60 },
-            { period: "Next 90 Days", color: "emerald", actions: ACTIONS_90 },
+            { period: "Next 30 Days", color: "rose",    icon: Zap,       border: "border-rose-500/30",    bg: "bg-rose-500/5",    text: "text-rose-400",    num: "bg-rose-500/20 text-rose-400",    actions: ACTIONS_30 },
+            { period: "Next 60 Days", color: "amber",   icon: TrendingUp, border: "border-amber-500/30",   bg: "bg-amber-500/5",   text: "text-amber-400",   num: "bg-amber-500/20 text-amber-400",   actions: ACTIONS_60 },
+            { period: "Next 90 Days", color: "emerald", icon: Target,     border: "border-emerald-500/30", bg: "bg-emerald-500/5", text: "text-emerald-400", num: "bg-emerald-500/20 text-emerald-400", actions: ACTIONS_90 },
           ].map((block) => (
-            <div key={block.period}>
-              <p className={`text-xs font-semibold uppercase tracking-wide mb-2 ${block.color === "rose" ? "text-rose-400" : block.color === "amber" ? "text-amber-400" : "text-emerald-400"}`}>
-                {block.period}
-              </p>
+            <div key={block.period} className={`rounded-xl border ${block.border} ${block.bg} p-4 space-y-3`}>
+              <div className="flex items-center gap-2">
+                <block.icon className={`h-4 w-4 ${block.text}`} />
+                <p className={`text-xs font-bold uppercase tracking-wider ${block.text}`}>{block.period}</p>
+              </div>
               <ul className="space-y-2">
                 {block.actions.map((a, i) => (
                   <li key={i} className="flex items-start gap-2 text-sm text-slate-300">
-                    <span className={`mt-0.5 flex h-4 w-4 shrink-0 items-center justify-center rounded-full text-xs font-bold ${block.color === "rose" ? "bg-rose-500/20 text-rose-400" : block.color === "amber" ? "bg-amber-500/20 text-amber-400" : "bg-emerald-500/20 text-emerald-400"}`}>
-                      {i + 1}
-                    </span>
+                    <span className={`mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded-full text-xs font-bold ${block.num}`}>{i + 1}</span>
                     {a}
                   </li>
                 ))}

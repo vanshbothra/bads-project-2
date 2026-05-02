@@ -1,6 +1,7 @@
 "use client";
 import { Shield, AlertTriangle, CheckCircle2, Info } from "lucide-react";
 import { DATA_QUALITY_ISSUES } from "@/lib/data";
+import { PageHeader, MethodBox, AlertBanner } from "@/components/shared";
 
 function Section({ title, children }: { title: string; children: React.ReactNode }) {
   return (
@@ -11,13 +12,7 @@ function Section({ title, children }: { title: string; children: React.ReactNode
   );
 }
 
-function MethodBox({ children }: { children: React.ReactNode }) {
-  return (
-    <div className="rounded-lg border border-blue-500/20 bg-blue-500/5 px-4 py-3 text-sm text-blue-200 leading-relaxed">
-      <span className="font-semibold text-blue-400">Why we did this: </span>{children}
-    </div>
-  );
-}
+
 
 const SCORE_CARDS = [
   { table: "Customers", score: 99.7, status: "healthy" },
@@ -49,15 +44,7 @@ const ABT_KPIS = [
 export default function AuditPage() {
   return (
     <div className="mx-auto max-w-5xl space-y-8">
-      <div className="flex items-start gap-4">
-        <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-emerald-500/10">
-          <Shield className="h-6 w-6 text-emerald-400" />
-        </div>
-        <div>
-          <h1 className="text-3xl font-bold text-white">Data Audit & Analytical Base Table</h1>
-          <p className="mt-1 text-sm text-slate-400">Phase 1 — Before any analysis, we must trust the data</p>
-        </div>
-      </div>
+      <PageHeader icon={Shield} title="Data Audit & Analytical Base Table" subtitle="Before any analysis, we must trust the data" accent="emerald" phase="Phase 1" />
 
       <MethodBox>
         Raw operational data from five tables (customers, campaigns, leads, website_sessions, transactions)
@@ -68,28 +55,31 @@ export default function AuditPage() {
       </MethodBox>
 
       {/* Data maturity scores */}
-      <Section title="Data Maturity Scores">
+      <div className="space-y-3">
+        <h2 className="text-lg font-semibold text-white border-b border-slate-800 pb-2">Data Maturity Scores</h2>
         <p className="text-sm text-slate-400">Composite score per table: completeness + logical validity. Above 90 = Healthy; 70–90 = Warning; below 70 = Critical.</p>
         <div className="grid grid-cols-2 gap-3 sm:grid-cols-5">
           {SCORE_CARDS.map((s) => (
-            <div key={s.table} className="rounded-xl border border-slate-800 bg-slate-900 p-4 text-center">
+            <div key={s.table} className="score-card rounded-xl border border-slate-800 bg-slate-900 p-4 text-center">
               <p className="text-xs font-medium text-slate-400">{s.table}</p>
               <p className={`mt-1 text-2xl font-bold ${s.status === "healthy" ? "text-emerald-400" : s.status === "critical" ? "text-rose-400" : "text-amber-400"}`}>{s.score}</p>
-              <div className="mt-1 flex items-center justify-center gap-1">
+              <div className={`score-bar ${s.status === "healthy" ? "score-bar-healthy" : s.status === "critical" ? "score-bar-critical" : "score-bar-warning"}`}
+                   style={{ width: `${s.score}%` }} />
+              <div className="mt-2 flex items-center justify-center gap-1">
                 {s.status === "healthy"
                   ? <><CheckCircle2 className="h-3 w-3 text-emerald-400" /><span className="text-xs text-emerald-400">Healthy</span></>
                   : s.status === "critical"
                   ? <><AlertTriangle className="h-3 w-3 text-rose-400" /><span className="text-xs text-rose-400">Critical</span></>
-                  : <><AlertTriangle className="h-3 w-3 text-amber-400" /><span className="text-xs text-amber-400">Warning</span></>
-                }
+                  : <><AlertTriangle className="h-3 w-3 text-amber-400" /><span className="text-xs text-amber-400">Warning</span></>}
               </div>
             </div>
           ))}
         </div>
-      </Section>
+      </div>
 
       {/* Dataset sizes */}
-      <Section title="Dataset Summary">
+      <div className="space-y-3">
+        <h2 className="text-lg font-semibold text-white border-b border-slate-800 pb-2">Dataset Summary</h2>
         <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
           {STATS.map((s) => (
             <div key={s.label} className="rounded-lg border border-slate-800 bg-slate-900 p-3">
@@ -99,13 +89,14 @@ export default function AuditPage() {
             </div>
           ))}
         </div>
-      </Section>
+      </div>
 
       {/* Issues found */}
-      <Section title="Issues Found & Treatments">
+      <div className="space-y-3">
+        <h2 className="text-lg font-semibold text-white border-b border-slate-800 pb-2">Issues Found & Treatments</h2>
         <p className="text-sm text-slate-400">Every issue below was documented in the audit note before being corrected. Nothing was silently dropped.</p>
-        <div className="overflow-x-auto rounded-xl border border-slate-800">
-          <table className="w-full text-sm">
+        <div className="dash-table-wrap">
+          <table className="dash-table w-full text-sm">
             <thead>
               <tr className="border-b border-slate-800 bg-slate-900/80">
                 <th className="px-4 py-3 text-left text-xs font-semibold text-slate-400 uppercase tracking-wide">Table</th>
@@ -132,17 +123,14 @@ export default function AuditPage() {
             </tbody>
           </table>
         </div>
-      </Section>
+      </div>
 
       {/* ABT KPIs */}
-      <Section title="Analytical Base Table — Engineered KPIs">
-        <MethodBox>
-          The ABT joins all five tables at the customer grain. KPIs are computed once and stored, ensuring
-          every downstream model uses identical feature definitions. This prevents calculation drift
-          between phases (e.g., LCR in segmentation differs from LCR in lead prediction if computed ad hoc).
-        </MethodBox>
-        <div className="overflow-x-auto rounded-xl border border-slate-800">
-          <table className="w-full text-sm">
+      <div className="space-y-3">
+        <h2 className="text-lg font-semibold text-white border-b border-slate-800 pb-2">Analytical Base Table — Engineered KPIs</h2>
+        <MethodBox label="Why we built the ABT">The ABT joins all five tables at the customer grain. KPIs are computed once and stored, ensuring every downstream model uses identical feature definitions. This prevents calculation drift between phases (e.g., LCR in segmentation differs from LCR in lead prediction if computed ad hoc).</MethodBox>
+        <div className="dash-table-wrap">
+          <table className="dash-table w-full text-sm">
             <thead>
               <tr className="border-b border-slate-800 bg-slate-900/80">
                 <th className="px-4 py-3 text-left text-xs font-semibold text-slate-400 uppercase">KPI</th>
@@ -161,23 +149,17 @@ export default function AuditPage() {
             </tbody>
           </table>
         </div>
-      </Section>
+      </div>
 
       {/* Identity resolution gap */}
-      <div className="rounded-xl border border-amber-500/20 bg-amber-500/5 p-5">
-        <div className="flex items-start gap-3">
-          <Info className="mt-0.5 h-5 w-5 shrink-0 text-amber-400" />
-          <div>
-            <p className="font-semibold text-amber-300">Strategic Fix Required: Identity Resolution</p>
-            <p className="mt-1 text-sm text-amber-200/80">
-              22% of website sessions are anonymous — no customer_id link. This means one in five engagement
-              signals (add-to-cart, checkout started) cannot be attributed to a customer journey.
-              <strong className="text-amber-300"> Fix</strong>: Implement server-side tracking or first-party cookie reconciliation to close this gap.
-              Every 1% improvement in session match rate recovers attribution data for ~190 additional customers.
-            </p>
-          </div>
-        </div>
-      </div>
+      <AlertBanner type="amber" title="Strategic Fix Required: Identity Resolution" pulse>
+        <p className="mt-1 text-sm text-amber-200/80">
+          22% of website sessions are anonymous — no customer_id link. This means one in five engagement
+          signals (add-to-cart, checkout started) cannot be attributed to a customer journey.
+          <strong className="text-amber-300"> Fix</strong>: Implement server-side tracking or first-party cookie reconciliation to close this gap.
+          Every 1% improvement in session match rate recovers attribution data for ~190 additional customers.
+        </p>
+      </AlertBanner>
     </div>
   );
 }

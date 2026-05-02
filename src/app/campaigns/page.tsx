@@ -4,24 +4,9 @@ import dynamic from "next/dynamic";
 import { Megaphone, AlertTriangle, TrendingUp } from "lucide-react";
 import { BUDGET_REALLOCATION, DECEPTIVE_CAMPAIGNS, CHANNEL_QUALITY } from "@/lib/data";
 import { PLOTLY_DARK_LAYOUT, PLOTLY_CONFIG, CHART_COLORS } from "@/lib/plotly-theme";
+import { PageHeader, MethodBox, InsightBox, AlertBanner } from "@/components/shared";
 
 const Plot = dynamic(() => import("react-plotly.js"), { ssr: false });
-
-function MethodBox({ children }: { children: React.ReactNode }) {
-  return (
-    <div className="rounded-lg border border-blue-500/20 bg-blue-500/5 px-4 py-3 text-sm text-blue-200 leading-relaxed">
-      <span className="font-semibold text-blue-400">Why: </span>{children}
-    </div>
-  );
-}
-
-function InsightBox({ children }: { children: React.ReactNode }) {
-  return (
-    <div className="rounded-lg border border-emerald-500/20 bg-emerald-500/5 px-4 py-3 text-sm text-emerald-200 leading-relaxed">
-      <span className="font-semibold text-emerald-400">Interpretation: </span>{children}
-    </div>
-  );
-}
 
 export default function CampaignsPage() {
   const budgetChannels = BUDGET_REALLOCATION.map((b) => b.channel);
@@ -39,15 +24,7 @@ export default function CampaignsPage() {
 
   return (
     <div className="mx-auto max-w-7xl space-y-8">
-      <div className="flex items-start gap-4">
-        <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-amber-500/10">
-          <Megaphone className="h-6 w-6 text-amber-400" />
-        </div>
-        <div>
-          <h1 className="text-3xl font-bold text-white">Campaign & Channel Analysis</h1>
-          <p className="mt-1 text-sm text-slate-400">Phase 4 — Grouping campaigns, finding deceptive efficiency, and building a budget reallocation model</p>
-        </div>
-      </div>
+      <PageHeader icon={Megaphone} title="Campaign & Channel Analysis" subtitle="Grouping campaigns, finding deceptive efficiency, and building a budget reallocation model" accent="amber" phase="Phase 4" />
 
       <MethodBox>
         K-Means clustering (k=2, silhouette = 0.622) was applied to campaign-level features (spend, LCR, ROAS, CPA)
@@ -59,16 +36,18 @@ export default function CampaignsPage() {
       </MethodBox>
 
       {/* Spend anomaly alert */}
-      <div className="rounded-xl border border-rose-500/30 bg-rose-500/8 p-5">
+      <div className="alarm-banner rounded-xl border border-rose-500/40 bg-rose-500/8 p-5">
         <div className="flex items-start gap-3">
-          <AlertTriangle className="mt-0.5 h-5 w-5 shrink-0 text-rose-400" />
+          <AlertTriangle className="mt-0.5 h-6 w-6 shrink-0 text-rose-400" />
           <div>
-            <p className="font-semibold text-rose-300">🚨 Spend Anomaly: MKT2021</p>
-            <p className="mt-1 text-sm text-rose-200/80">
+            <div className="flex items-center gap-2 mb-1">
+              <p className="font-bold text-rose-300 text-base">🚨 Spend Anomaly: MKT2021</p>
+              <span className="rounded-full bg-rose-500/20 px-2.5 py-0.5 text-[11px] font-bold uppercase tracking-wider text-rose-400">Immediate Audit Required</span>
+            </div>
+            <p className="text-sm text-rose-200/80">
               Campaign MKT2021 spent <strong className="text-rose-300">$999,999</strong> — a 20× outlier vs. all other campaigns.
               Its ROAS was <strong className="text-rose-300">0.009</strong> (effectively zero) and CPA was <strong>$21,277</strong>
               vs. the normal cluster average of $921. This single campaign may represent a data entry error or a catastrophic misrun.
-              <strong className="text-rose-300"> Immediate audit required.</strong>
             </p>
           </div>
         </div>

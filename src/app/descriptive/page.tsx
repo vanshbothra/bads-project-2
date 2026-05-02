@@ -9,24 +9,9 @@ import {
   REGION_ANALYSIS, DEVICE_ANALYSIS, CREATIVE_TYPE, CAMPAIGN_OBJECTIVE,
 } from "@/lib/data";
 import { PLOTLY_DARK_LAYOUT, PLOTLY_CONFIG, CHART_COLORS } from "@/lib/plotly-theme";
+import { PageHeader, MethodBox, InsightBox } from "@/components/shared";
 
 const Plot = dynamic(() => import("react-plotly.js"), { ssr: false });
-
-function MethodBox({ children }: { children: React.ReactNode }) {
-  return (
-    <div className="rounded-lg border border-blue-500/20 bg-blue-500/5 px-4 py-3 text-sm text-blue-200 leading-relaxed">
-      <span className="font-semibold text-blue-400">Why: </span>{children}
-    </div>
-  );
-}
-
-function InsightBox({ children }: { children: React.ReactNode }) {
-  return (
-    <div className="rounded-lg border border-emerald-500/20 bg-emerald-500/5 px-4 py-3 text-sm text-emerald-200 leading-relaxed">
-      <span className="font-semibold text-emerald-400">Interpretation: </span>{children}
-    </div>
-  );
-}
 
 function ChartCard({ title, method, children, insight }: { title: string; method: string; children: React.ReactNode; insight: string }) {
   return (
@@ -62,15 +47,7 @@ export default function DescriptivePage() {
 
   return (
     <div className="mx-auto max-w-7xl space-y-8">
-      <div className="flex items-start gap-4">
-        <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-blue-500/10">
-          <BarChart3 className="h-6 w-6 text-blue-400" />
-        </div>
-        <div>
-          <h1 className="text-3xl font-bold text-white">Descriptive Statistics & Hypothesis Testing</h1>
-          <p className="mt-1 text-sm text-slate-400">Phase 2 — Understanding the distribution and statistical differences in the data</p>
-        </div>
-      </div>
+      <PageHeader icon={BarChart3} title="Descriptive Statistics & Hypothesis Testing" subtitle="Understanding the distribution and statistical differences in the data" accent="blue" phase="Phase 2" />
 
       <MethodBox>
         Descriptive statistics answer the question "what does the data look like?" before any modeling.
