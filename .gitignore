@@ -1,0 +1,11 @@
+.next/
+node_modules/
+dist/
+build/
+out/
+coverage/
+*.log
+*.env
+.DS_Store
+.vscode/
+.idea/
